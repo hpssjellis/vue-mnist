@@ -42,6 +42,7 @@ export class MnistData {
   }
 
   async load() {
+    console.log('you are in the load method of class MnistData')
     // Make a request for the MNIST sprited image.
     const img = new Image();
     const canvas = document.createElement('canvas');
@@ -64,7 +65,6 @@ export class MnistData {
               datasetBytesBuffer, i * IMAGE_SIZE * chunkSize * 4,
               IMAGE_SIZE * chunkSize);
 
-
           ctx.drawImage(
               img, 0, i * chunkSize, img.width, chunkSize, 0, 0, img.width,
               chunkSize);
@@ -82,6 +82,7 @@ export class MnistData {
 
         resolve();
       };
+      console.log('you are about to load image');
       img.src = MNIST_IMAGES_SPRITE_PATH;
     });
 
@@ -108,6 +109,7 @@ export class MnistData {
   }
 
   nextTrainBatch(batchSize) {
+    console.log('you are in nextTrainBatchMethod')
     return this.nextBatch(
         batchSize, [this.trainImages, this.trainLabels], () => {
           this.shuffledTrainIndex =
@@ -117,6 +119,7 @@ export class MnistData {
   }
 
   nextTestBatch(batchSize) {
+    console.log('you are in nextTestBatch')
     return this.nextBatch(batchSize, [this.testImages, this.testLabels], () => {
       this.shuffledTestIndex =
           (this.shuffledTestIndex + 1) % this.testIndices.length;
@@ -125,6 +128,7 @@ export class MnistData {
   }
 
   nextBatch(batchSize, data, index) {
+    console.log('you are in nextBatch')
     const batchImagesArray = new Float32Array(batchSize * IMAGE_SIZE);
     const batchLabelsArray = new Uint8Array(batchSize * NUM_CLASSES);
 
@@ -142,7 +146,7 @@ export class MnistData {
 
     const xs = tf.tensor2d(batchImagesArray, [batchSize, IMAGE_SIZE]);
     const labels = tf.tensor2d(batchLabelsArray, [batchSize, NUM_CLASSES]);
-
+    console.log('you finished nextBatch')
     return {xs, labels};
   }
 }

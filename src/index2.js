@@ -84,6 +84,7 @@ async function train() {
         batch.xs.reshape([BATCH_SIZE, 28, 28, 1]), batch.labels,
         {batchSize: BATCH_SIZE, validationData, epochs: 1});
 
+
     const loss = history.history.loss[0];
     const accuracy = history.history.acc[0];
 

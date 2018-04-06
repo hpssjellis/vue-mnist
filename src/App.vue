@@ -1,9 +1,9 @@
 <template>
   <div id="app">
     <img src="./assets/logo.png">
-    <!-- <HelloWorld/> -->
-    <!-- <Main></Main> -->
-    <Testing></Testing>
+     <HelloWorld/>
+     <Main></Main>
+    <!--<Testing></Testing>-->
   </div>
 </template>
 
@@ -15,9 +15,9 @@ import Testing from './components/Testing'
 export default {
   name: 'App',
   components: {
-    // HelloWorld,
-      // Main,
-      Testing
+     HelloWorld,
+       Main,
+//      Testing
   }
 }
 </script>

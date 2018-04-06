@@ -13,6 +13,11 @@
                         v-if="valuesCreated"
                 >
                 </plot>
+                <plot>
+                    v-bind:id="accuracyCanvas"
+                    v-bind:accuracyValues="accuracyValues"
+                    v-if="accuracyCreated"
+                </plot>
             </div>
             <div class="canvases">
                 <div class="label" id="accuracy-label"></div>
@@ -31,6 +36,7 @@
     import Plot from '../components/Plot.vue'
 
     const model = tf.sequential()
+    let mnistData
 
     model.add(tf.layers.conv2d({
         inputShape: [28, 28, 1],
@@ -84,6 +90,7 @@
                 message: 'Loading data ...',
                 lossCanvas: 'lossCanvas',
                 lossValues: [],
+                accuracyValues: [],
                 valuesCreated: false
 
             }
@@ -95,46 +102,79 @@
             async train() {
                 this.message = 'Training ...';
 
+
                 const lossValues = [];
                 const accuracyValues = [];
 
                 for (let i = 0; i < TRAIN_BATCHES; i++) {
-                    const batch = data.nextTrainBatch(BATCH_SIZE)
+                    const batch = mnistData.nextTrainBatch(BATCH_SIZE);
 
-                    let testBatch
-                    let validationData
-
+                    let testBatch;
+                    let validationData;
+                    // Every few batches test the accuracy of the mode.
                     if (i % TEST_ITERATION_FREQUENCY === 0) {
-                        testBatch = data.nextTestBatch(TEST_BATCH_SIZE)
+                        testBatch = mnistData.nextTestBatch(TEST_BATCH_SIZE);
                         validationData = [
-                            testBatch.xs.reshape([TEST_BATCH_SIZE, 28, 28, 1])
-                        ]
+                            testBatch.xs.reshape([TEST_BATCH_SIZE, 28, 28, 1]), testBatch.labels
+                        ];
                     }
 
+                    // The entire dataset doesn't fit into memory so we call fit repeatedly
+                    // with batches.
                     const history = await model.fit(
-                        batch.xs.reshape([BATCH_SIZE, 28, 28, 1], batch.labels,
-                            {batchSize: BATCH_SIZE, validationData, epochs: 1}
-                        )
-                    );
+                        batch.xs.reshape([BATCH_SIZE, 28, 28, 1]), batch.labels,
+                        {batchSize: BATCH_SIZE, validationData, epochs: 1});
+
 
                     const loss = history.history.loss[0];
-                    const accuracy = history.history.acc[0]
+                    const accuracy = history.history.acc[0];
 
-                    this.lossValues.push({'batch': i, 'accuracy': accuracy, 'set': 'train'})
+                    // Plot loss / accuracy.
+                    this.lossValues.push({'batch': i, 'loss': loss, 'set': 'train'});
+//                    ui.plotLosses(lossValues);
 
+                    if (testBatch != null) {
+                        this.accuracyValues.push({'batch': i, 'accuracy': accuracy, 'set': 'train'});
+//                        ui.plotAccuracies(accuracyValues);
+                    }
+
+                    batch.xs.dispose();
+                    batch.labels.dispose();
+                    if (testBatch != null) {
+                        testBatch.xs.dispose();
+                        testBatch.labels.dispose();
+                    }
+
+                    await tf.nextFrame();
                 }
                 this.valuesCreated = true;
+                console.log('you finished train')
             },
 
             async load() {
-                const mnistData = new MnistData();
+                mnistData = new MnistData();
                 await mnistData.load()
+            },
+
+            async showPredictions() {
+                const testExamples = 100;
+                const batch = mnistData.nextTestBatch(testExamples);
+
+                tf.tidy(() => {
+                    const output = model.predict(batch.xs.reshape([-1, 28, 28, 1]));
+
+                    const axis = 1;
+                    const labels = Array.from(batch.labels.argMax(axis).dataSync());
+                    const predictions = Array.from(output.argMax(axis).dataSync());
+
+//                    ui.showTestResults(batch, predictions, labels);
+                });
             },
 
             async mnist() {
                 await this.load()
                 await this.train()
-                showPredictions()
+                this.showPredictions()
             }
 
         }
