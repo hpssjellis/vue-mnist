@@ -121,13 +121,13 @@
                     const accuracy = history.history.acc[0]
 
                     this.lossValues.push({'batch': i, 'accuracy': accuracy, 'set': 'train'})
-                    this.valuesCreated = true;
 
                 }
+                this.valuesCreated = true;
             },
 
             async load() {
-                 const mnistData = new MnistData();
+                const mnistData = new MnistData();
                 await mnistData.load()
             },
 
