@@ -2,27 +2,28 @@
     <div class="container">
 
         <div id="message">{{ message }}</div>
+        <div v-if="batchNumber !== null">
+            <div>{{ `Training batch: ${batchNumber}`}}</div>
+        </div>
+
+        <div v-if="lossCreated">
+            <p>{{ `Last loss: ${lossValues[lossValues.length - 1].loss.toFixed(2)}`}}</p>
+            <p>{{ `Last accuracy: ${(accuracyValues[accuracyValues.length - 1].accuracy * 100).toFixed(2)}`}}</p>
+        </div>
 
         <div id="stats">
-            <div class="canvases">
-                <div class="label" id="loss-label"></div>
-                <div id="lossCanvas"></div>
-                <plot
-                        v-bind:id="lossCanvas"
-                        v-bind:lossValues="lossValues"
-                        v-if="valuesCreated"
-                >
-                </plot>
-                <plot>
+            <Plot
+                    v-bind:id="lossCanvas"
+                    v-bind:lossValues="lossValues"
+                    v-if="lossCreated"
+            >
+            </Plot>
+            <Plot
                     v-bind:id="accuracyCanvas"
                     v-bind:accuracyValues="accuracyValues"
                     v-if="accuracyCreated"
-                </plot>
-            </div>
-            <div class="canvases">
-                <div class="label" id="accuracy-label"></div>
-                <div id="accuracyCanvas"></div>
-            </div>
+            >
+            </Plot>
         </div>
         <div id="images"></div>
     </div>
@@ -31,7 +32,7 @@
 
 <script>
     import * as tf from '@tensorflow/tfjs'
-    import { MnistData } from '../data.js'
+    import {MnistData} from '../data.js'
 
     import Plot from '../components/Plot.vue'
 
@@ -47,7 +48,7 @@
         kernelIniliazer: 'varianceScaling'
     }))
 
-    model.add(tf.layers.maxPooling2d({ poolSize: [2, 2], strides: [2, 2]}))
+    model.add(tf.layers.maxPooling2d({poolSize: [2, 2], strides: [2, 2]}))
     model.add(tf.layers.conv2d({
         kernelSize: 5,
         filters: 16,
@@ -55,7 +56,7 @@
         activation: 'relu',
         kernelIniliazer: 'varianceScaling'
     }))
-    model.add(tf.layers.maxPooling2d({ poolSize: [2, 2], strides: [2, 2]}))
+    model.add(tf.layers.maxPooling2d({poolSize: [2, 2], strides: [2, 2]}))
     model.add(tf.layers.flatten())
     model.add(tf.layers.dense({
         units: 10, kernelIniliazer: 'varianceScaling', activation: 'softmax'
@@ -89,14 +90,26 @@
             return {
                 message: 'Loading data ...',
                 lossCanvas: 'lossCanvas',
-                lossValues: [],
-                accuracyValues: [],
-                valuesCreated: false
+                accuracyCanvas: 'accuracyCanvas',
+                lossValues: [{
+                    'batch': null,
+                    'loss': null,
+                    'set': null
+                }],
+                accuracyValues: [{
+                    'batch': null,
+                    'accuracy': null,
+                    'set': null
+                }],
+                lossCreated: false,
+                accuracyCreated: false,
+                batchNumber: null
+
 
             }
         },
 
-        components: {Plot},
+        components: { Plot },
 
         methods: {
             async train() {
@@ -107,6 +120,7 @@
                 const accuracyValues = [];
 
                 for (let i = 0; i < TRAIN_BATCHES; i++) {
+                    this.batchNumber = i;
                     const batch = mnistData.nextTrainBatch(BATCH_SIZE);
 
                     let testBatch;
@@ -131,10 +145,13 @@
 
                     // Plot loss / accuracy.
                     this.lossValues.push({'batch': i, 'loss': loss, 'set': 'train'});
+                    console.log(this.lossValues)
+                    this.lossCreated = true;
 //                    ui.plotLosses(lossValues);
 
                     if (testBatch != null) {
                         this.accuracyValues.push({'batch': i, 'accuracy': accuracy, 'set': 'train'});
+                        this.accuracyCreated = true;
 //                        ui.plotAccuracies(accuracyValues);
                     }
 
@@ -147,8 +164,8 @@
 
                     await tf.nextFrame();
                 }
-                this.valuesCreated = true;
-                console.log('you finished train')
+                // this.valuesCreated = true;
+                this.message = 'Done'
             },
 
             async load() {
@@ -179,8 +196,6 @@
 
         }
     }
-
-
 
 
 </script>
