@@ -1,7 +1,6 @@
 <template>
   <div class="hello">
     <h1>{{ msg }}</h1>
-      <p>Let's get started</p>
   </div>
 </template>
 
@@ -10,7 +9,7 @@ export default {
   name: 'HelloWorld',
   data () {
     return {
-      msg: 'Welcome to MNIST with Tensorflow.js'
+      msg: 'Welcome to MNIST with Tensorflow.js and Vue.js'
     }
   }
 }

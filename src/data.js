@@ -109,7 +109,6 @@ export class MnistData {
   }
 
   nextTrainBatch(batchSize) {
-    console.log('you are in nextTrainBatchMethod')
     return this.nextBatch(
         batchSize, [this.trainImages, this.trainLabels], () => {
           this.shuffledTrainIndex =
@@ -119,7 +118,6 @@ export class MnistData {
   }
 
   nextTestBatch(batchSize) {
-    console.log('you are in nextTestBatch')
     return this.nextBatch(batchSize, [this.testImages, this.testLabels], () => {
       this.shuffledTestIndex =
           (this.shuffledTestIndex + 1) % this.testIndices.length;
@@ -128,7 +126,6 @@ export class MnistData {
   }
 
   nextBatch(batchSize, data, index) {
-    console.log('you are in nextBatch')
     const batchImagesArray = new Float32Array(batchSize * IMAGE_SIZE);
     const batchLabelsArray = new Uint8Array(batchSize * NUM_CLASSES);
 
@@ -146,7 +143,6 @@ export class MnistData {
 
     const xs = tf.tensor2d(batchImagesArray, [batchSize, IMAGE_SIZE]);
     const labels = tf.tensor2d(batchLabelsArray, [batchSize, NUM_CLASSES]);
-    console.log('you finished nextBatch')
     return {xs, labels};
   }
 }
