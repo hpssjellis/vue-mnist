@@ -1,10 +1,8 @@
 <template>
     <div class="container">
-        <section class="section">
-            <h1 class="title">{{ message }}</h1>
-        </section>
 
         <section class="section">
+            <h1 class="title">{{ message }}</h1>
             <h2 class="subtitle">
                 <p class="lead">
                     {{ `Batch: ${batchNumber}`}}
@@ -110,12 +108,8 @@
         data() {
             return {
                 message: 'Loading data ...',
-                lossCanvas: 'lossCanvas',
-                accuracyCanvas: 'accuracyCanvas',
                 lossValues: [],
                 accuracyValues: [],
-                lossCreated: false,
-                accuracyCreated: false,
                 batchNumber: null,
                 predictions: [],
                 predictionTitle: ''
@@ -128,10 +122,6 @@
         methods: {
             async train() {
                 this.message = 'Training ...';
-
-
-                const lossValues = [];
-                const accuracyValues = [];
 
                 for (let i = 0; i < TRAIN_BATCHES; i++) {
                     this.batchNumber = i;
@@ -162,14 +152,10 @@
                     this.lossValues.push({'batch': i, 'loss': loss, 'set': 'train'});
 
                     this.plotLoss()
-                    this.lossCreated = true;
-//                    ui.plotLosses(lossValues);
 
                     if (testBatch != null) {
                         this.accuracyValues.push({'batch': i, 'accuracy': accuracy, 'set': 'train'});
                         this.plotAccuracy()
-                        this.accuracyCreated = true;
-//                        ui.plotAccuracies(accuracyValues);
                     }
 
                     batch.xs.dispose();
@@ -181,28 +167,12 @@
 
                     await tf.nextFrame();
                 }
-                // this.valuesCreated = true;
                 this.message = 'Done!'
             },
 
             async load() {
                 mnistData = new MnistData();
                 await mnistData.load()
-            },
-
-            async showPredictions() {
-                const testExamples = 100;
-                const batch = mnistData.nextTestBatch(testExamples);
-
-                tf.tidy(() => {
-                    const output = model.predict(batch.xs.reshape([-1, 28, 28, 1]));
-
-                    const axis = 1;
-                    const labels = Array.from(batch.labels.argMax(axis).dataSync());
-                    const predictions = Array.from(output.argMax(axis).dataSync());
-
-//                    ui.showTestResults(batch, predictions, labels);
-                });
             },
 
             async mnist() {

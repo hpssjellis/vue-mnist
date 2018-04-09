@@ -8,7 +8,7 @@
                 </h1>
 
                 <h2 class="subtitle">
-                    Let's play with Tensorflow.js and Vue.js
+                    Let's train the famous MNIST data using Tensorflow.js and Vue.js
                 </h2>
             </div>
             </div>
