@@ -1,10 +1,10 @@
 <template>
     <div class="container">
+        <section class="section">
+            <h1 class="title">{{ message }}</h1>
+        </section>
 
         <section class="section">
-            <h1 class="title">
-                {{ message }}
-            </h1>
             <h2 class="subtitle">
                 <p class="lead">
                     {{ `Batch: ${batchNumber}`}}
@@ -37,6 +37,7 @@
             </div>
         </section>
         <section class="section">
+            <h1 class="title">{{ predictionTitle }}</h1>
             <div id="images"></div>
         </section>
     </div>
@@ -95,12 +96,15 @@
 
 
         created() {
-            console.log(this.valuesCreated)
-            this.mnist();
+            // this.message = 'Loading data ...'
+            // console.log(this.valuesCreated)
+            // this.mnist();
         },
 
         mounted() {
             this.message = 'Loading data ...'
+            console.log(this.valuesCreated)
+            this.mnist();
         },
 
         data() {
@@ -113,7 +117,8 @@
                 lossCreated: false,
                 accuracyCreated: false,
                 batchNumber: null,
-                predictions: []
+                predictions: [],
+                predictionTitle: ''
 
 
             }
@@ -264,6 +269,7 @@
             },
 
             showTestResults(batch, predictions, labels) {
+                this.predictionTitle = 'Predictions';
 
                 const imagesElement = document.getElementById('images');
                 console.log(imagesElement)
