@@ -1,8 +1,9 @@
 <template>
   <div id="app">
-    <img src="./assets/logo.png">
-     <HelloWorld/>
-     <Main></Main>
+    <div class="container">
+      <HelloWorld/>
+      <Main></Main>
+    </div>
     <!--<Testing></Testing>-->
   </div>
 </template>
@@ -30,5 +31,14 @@ export default {
   /*text-align: center;*/
   color: #2c3e50;
   margin-top: 60px;
+}
+
+.container {
+  padding-left: 20px;
+  padding-right: 20px;
+}
+
+.vega-actions {
+  display: none;
 }
 </style>

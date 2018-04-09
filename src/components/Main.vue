@@ -6,24 +6,20 @@
             <div>{{ `Training batch: ${batchNumber}`}}</div>
         </div>
 
-        <div v-if="lossCreated">
-            <p>{{ `Last loss: ${lossValues[lossValues.length - 1].loss.toFixed(2)}`}}</p>
-            <p>{{ `Last accuracy: ${(accuracyValues[accuracyValues.length - 1].accuracy * 100).toFixed(2)}`}}</p>
-        </div>
-
         <div id="stats">
-            <Plot
-                    v-bind:id="lossCanvas"
-                    v-bind:lossValues="lossValues"
-                    v-if="lossCreated"
-            >
-            </Plot>
-            <Plot
-                    v-bind:id="accuracyCanvas"
-                    v-bind:accuracyValues="accuracyValues"
-                    v-if="accuracyCreated"
-            >
-            </Plot>
+            <div class="canvases">
+                
+                <div class="label" id="accuracy-label">
+                    <p>{{ `Last loss: ${lossValues[lossValues.length - 1].loss.toFixed(2)}`}}</p>
+                </div>
+                <div id="lossCanvas"></div>
+            </div>
+            <div class="canvases">
+                <div class="label" id="accuracy-label">
+                    <p>{{ `Last accuracy: ${(accuracyValues[accuracyValues.length - 1].accuracy * 100).toFixed(2)}`}}</p>
+                </div>
+                <div id="accuracyCanvas"></div>
+            </div>
         </div>
         <div id="images"></div>
     </div>
@@ -32,9 +28,8 @@
 
 <script>
     import * as tf from '@tensorflow/tfjs'
-    import {MnistData} from '../data.js'
-
-    import Plot from '../components/Plot.vue'
+    import { MnistData } from '../data.js'
+    import embed from 'vega-embed'
 
     const model = tf.sequential()
     let mnistData
@@ -91,16 +86,8 @@
                 message: 'Loading data ...',
                 lossCanvas: 'lossCanvas',
                 accuracyCanvas: 'accuracyCanvas',
-                lossValues: [{
-                    'batch': null,
-                    'loss': null,
-                    'set': null
-                }],
-                accuracyValues: [{
-                    'batch': null,
-                    'accuracy': null,
-                    'set': null
-                }],
+                lossValues: [],
+                accuracyValues: [],
                 lossCreated: false,
                 accuracyCreated: false,
                 batchNumber: null
@@ -109,7 +96,6 @@
             }
         },
 
-        components: { Plot },
 
         methods: {
             async train() {
@@ -143,14 +129,17 @@
                     const loss = history.history.loss[0];
                     const accuracy = history.history.acc[0];
 
+
                     // Plot loss / accuracy.
                     this.lossValues.push({'batch': i, 'loss': loss, 'set': 'train'});
-                    console.log(this.lossValues)
+                    this.plotLoss();
+                    
                     this.lossCreated = true;
 //                    ui.plotLosses(lossValues);
 
                     if (testBatch != null) {
                         this.accuracyValues.push({'batch': i, 'accuracy': accuracy, 'set': 'train'});
+                        this.plotAccuracy()
                         this.accuracyCreated = true;
 //                        ui.plotAccuracies(accuracyValues);
                     }
@@ -192,7 +181,57 @@
                 await this.load()
                 await this.train()
                 this.showPredictions()
+            },
+
+            plotAccuracy(){
+
+                embed(
+                    '#accuracyCanvas', {
+                        '$schema': 'https://vega.github.io/schema/vega-lite/v2.json',
+                        'data': {'values': this.accuracyValues },
+                        'mark': {'type': 'line', 'legend': null},
+                        'width': 260,
+                        'orient': 'vertical',
+                        'encoding': {
+                            'x': {'field': 'batch', 'type': 'quantitative'},
+                            'y': {'field': 'accuracy', 'type': 'quantitative'},
+                            'color': {'field': 'set', 'type': 'nominal', 'legend': null},
+                        }
+                    },
+                    { width: 360});
+
+            },
+
+
+            plotLoss(){
+                embed(
+                    '#lossCanvas', {
+                        '$schema': 'https://vega.github.io/schema/vega-lite/v2.json',
+                        'data': {'values': this.lossValues },
+                        'mark': {'type': 'line'},
+                        'width': 260,
+                        'orient': 'vertical',
+                        'encoding': {
+                            'x': {'field': 'batch', 'type': 'quantitative'},
+                            'y': {'field': 'loss', 'type': 'quantitative'},
+                            'color': {'field': 'set', 'type': 'nominal', 'legend': null},
+                        }
+                    },
+                    {width: 360});
+
+            },
+
+
+            showTestResults(){
+                this.message = 'Testing ...'
+                
             }
+
+
+
+
+
+
 
         }
     }
@@ -201,6 +240,10 @@
 </script>
 
 
-<style>
+<style scoped>
 
+    .canvases {
+        display: inline-block;
+        width: 460px;
+    }
 </style>
