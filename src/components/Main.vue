@@ -1,35 +1,53 @@
 <template>
     <div class="container">
 
-        <div id="message">{{ message }}</div>
-        <div v-if="batchNumber !== null">
-            <div>{{ `Training batch: ${batchNumber}`}}</div>
-        </div>
+        <section class="section">
+            <h1 class="title">
+                {{ message }}
+            </h1>
+            <h2 class="subtitle">
+                <p class="lead">
+                    {{ `Batch: ${batchNumber}`}}
+                </p>
+            </h2>
+        </section>
 
-        <div id="stats">
-            <div class="canvases">
-                
-                <div class="label" id="accuracy-label">
-                    <p>{{ `Last loss: ${lossValues[lossValues.length - 1].loss.toFixed(2)}`}}</p>
+        <section class="section">
+            <div class="columns">
+                <div class="column">
+                    <div class="canvases">
+                        <div class="label" id="loss-label">
+                            <p class="lead">{{ `Last loss: ${lossValues[lossValues.length - 1].loss.toFixed(2)}`}}</p>
+                        </div>
+                        <div id="lossCanvas"></div>
+                    </div>
+
                 </div>
-                <div id="lossCanvas"></div>
-            </div>
-            <div class="canvases">
-                <div class="label" id="accuracy-label">
-                    <p>{{ `Last accuracy: ${(accuracyValues[accuracyValues.length - 1].accuracy * 100).toFixed(2)}`}}</p>
+                <div class="column">
+                    <div class="canvases">
+                        <div class="label" id="accuracy-label">
+                            <p class="lead">{{ `Last accuracy: ${(accuracyValues[accuracyValues.length - 1].accuracy *
+                                100).toFixed(2)}`}}</p>
+                        </div>
+                        <div id="accuracyCanvas"></div>
+                    </div>
                 </div>
-                <div id="accuracyCanvas"></div>
+                <div class="column"></div>
+                <div class="column"></div>
             </div>
-        </div>
-        <div id="images"></div>
+        </section>
+        <section class="section">
+            <div id="images"></div>
+        </section>
     </div>
 </template>
 
 
 <script>
     import * as tf from '@tensorflow/tfjs'
-    import { MnistData } from '../data.js'
+    import {MnistData} from '../data.js'
     import embed from 'vega-embed'
+
 
     const model = tf.sequential()
     let mnistData
@@ -81,6 +99,10 @@
             this.mnist();
         },
 
+        mounted() {
+            this.message = 'Loading data ...'
+        },
+
         data() {
             return {
                 message: 'Loading data ...',
@@ -90,7 +112,8 @@
                 accuracyValues: [],
                 lossCreated: false,
                 accuracyCreated: false,
-                batchNumber: null
+                batchNumber: null,
+                predictions: []
 
 
             }
@@ -132,8 +155,8 @@
 
                     // Plot loss / accuracy.
                     this.lossValues.push({'batch': i, 'loss': loss, 'set': 'train'});
-                    this.plotLoss();
-                    
+
+                    this.plotLoss()
                     this.lossCreated = true;
 //                    ui.plotLosses(lossValues);
 
@@ -154,7 +177,7 @@
                     await tf.nextFrame();
                 }
                 // this.valuesCreated = true;
-                this.message = 'Done'
+                this.message = 'Done!'
             },
 
             async load() {
@@ -183,12 +206,11 @@
                 this.showPredictions()
             },
 
-            plotAccuracy(){
-
+            plotAccuracy() {
                 embed(
-                    '#accuracyCanvas', {
+                    `#accuracyCanvas`, {
                         '$schema': 'https://vega.github.io/schema/vega-lite/v2.json',
-                        'data': {'values': this.accuracyValues },
+                        'data': {'values': this.accuracyValues},
                         'mark': {'type': 'line', 'legend': null},
                         'width': 260,
                         'orient': 'vertical',
@@ -198,16 +220,17 @@
                             'color': {'field': 'set', 'type': 'nominal', 'legend': null},
                         }
                     },
-                    { width: 360});
+                    {width: 360});
 
             },
 
 
-            plotLoss(){
+            plotLoss() {
+
                 embed(
                     '#lossCanvas', {
                         '$schema': 'https://vega.github.io/schema/vega-lite/v2.json',
-                        'data': {'values': this.lossValues },
+                        'data': {'values': this.lossValues},
                         'mark': {'type': 'line'},
                         'width': 260,
                         'orient': 'vertical',
@@ -222,15 +245,74 @@
             },
 
 
-            showTestResults(){
-                this.message = 'Testing ...'
-                
+            async showPredictions() {
+
+                const testExamples = 100
+                const batch = mnistData.nextTestBatch(testExamples);
+
+                tf.tidy(() => {
+                    const output = model.predict(batch.xs.reshape([-1, 28, 28, 1]))
+                    const axis = 1
+                    const labels = Array.from(batch.labels.argMax(axis).dataSync())
+                    const predictions = Array.from(output.argMax(axis).dataSync())
+
+                    this.showTestResults(batch, predictions, labels)
+
+                });
+
+
+            },
+
+            showTestResults(batch, predictions, labels) {
+
+                const imagesElement = document.getElementById('images');
+                console.log(imagesElement)
+                const testExamples = batch.xs.shape[0];
+                let totalCorrect = 0;
+                for (let i = 0; i < testExamples; i++) {
+                    const image = batch.xs.slice([i, 0], [1, batch.xs.shape[1]]);
+
+                    const div = document.createElement('div');
+                    div.className = 'pred-container';
+
+                    const canvas = document.createElement('canvas');
+                    canvas.setAttribute('class', 'predictionCanvas');
+                    this.draw(image.flatten(), canvas);
+
+                    const pred = document.createElement('div');
+
+                    const prediction = predictions[i];
+                    const label = labels[i];
+                    const correct = prediction === label;
+
+                    pred.className = `pred ${(correct ? 'pred-correct' : 'pred-incorrect')}`;
+                    pred.innerText = `pred: ${prediction}`;
+
+                    div.appendChild(pred);
+                    div.appendChild(canvas);
+
+                    imagesElement.appendChild(div);
+
+
+                }
+            },
+
+            draw(image, canvas) {
+                const [width, height] = [28, 28];
+                canvas.width = width;
+                canvas.height = height;
+                const ctx = canvas.getContext('2d');
+                const imageData = new ImageData(width, height);
+                const data = image.dataSync();
+                for (let i = 0; i < height * width; ++i) {
+                    const j = i * 4;
+                    imageData.data[j + 0] = data[i] * 255;
+                    imageData.data[j + 1] = data[i] * 255;
+                    imageData.data[j + 2] = data[i] * 255;
+                    imageData.data[j + 3] = 255;
+                }
+                ctx.putImageData(imageData, 0, 0);
             }
-
-
-
-
-
 
 
         }
@@ -242,8 +324,5 @@
 
 <style scoped>
 
-    .canvases {
-        display: inline-block;
-        width: 460px;
-    }
+
 </style>
