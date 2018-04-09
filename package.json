@@ -11,6 +11,7 @@
   },
   "dependencies": {
     "@tensorflow/tfjs": "^0.6.1",
+    "bulma": "^0.6.2",
     "vega-embed": "^3.4.0",
     "vue": "^2.5.2"
   },

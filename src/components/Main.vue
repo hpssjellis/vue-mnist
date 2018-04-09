@@ -1,31 +1,37 @@
 <template>
     <div class="container">
 
-        <div id="message">{{ message }}</div>
-        <div v-if="batchNumber !== null">
-            <div>{{ `Training batch: ${batchNumber}`}}</div>
-        </div>
+        <section class="section">
+            <h1 class="title">
+                {{ message }}
+            </h1>
+            <h2 class="subtitle">
+                <p class="lead">
+                    {{ `Training batch: ${batchNumber}`}}
+                </p>
+            </h2>
+        </section>
 
-        <div v-if="lossCreated">
-            <p>{{ `Last loss: ${lossValues[lossValues.length - 1].loss.toFixed(2)}`}}</p>
-            <p>{{ `Last accuracy: ${(accuracyValues[accuracyValues.length - 1].accuracy * 100).toFixed(2)}`}}</p>
-        </div>
+        <div class="columns">
+            <div class="column">
+                <div class="canvases">
+                    <div class="label" id="accuracy-label">
+                        <p class="lead">{{ `Last loss: ${lossValues[lossValues.length - 1].loss.toFixed(2)}`}}</p>
+                    </div>
+                    <div id="lossCanvas"></div>
+                </div>
 
-        <div id="stats">
-            <Plot
-                    v-bind:id="lossCanvas"
-                    v-bind:lossValues="lossValues"
-                    v-if="lossCreated"
-            >
-            </Plot>
-            <Plot
-                    v-bind:id="accuracyCanvas"
-                    v-bind:accuracyValues="accuracyValues"
-                    v-if="accuracyCreated"
-            >
-            </Plot>
+            </div>
+            <div class="column">
+                <div class="canvases">
+                    <div class="label" id="accuracy-label">
+                        <p class="lead">{{ `Last accuracy: ${(accuracyValues[accuracyValues.length - 1].accuracy *
+                            100).toFixed(2)}`}}</p>
+                    </div>
+                    <div id="accuracyCanvas"></div>
+                </div>
+            </div>
         </div>
-        <div id="images"></div>
     </div>
 </template>
 
@@ -33,8 +39,8 @@
 <script>
     import * as tf from '@tensorflow/tfjs'
     import {MnistData} from '../data.js'
+    import embed from 'vega-embed'
 
-    import Plot from '../components/Plot.vue'
 
     const model = tf.sequential()
     let mnistData
@@ -91,16 +97,8 @@
                 message: 'Loading data ...',
                 lossCanvas: 'lossCanvas',
                 accuracyCanvas: 'accuracyCanvas',
-                lossValues: [{
-                    'batch': null,
-                    'loss': null,
-                    'set': null
-                }],
-                accuracyValues: [{
-                    'batch': null,
-                    'accuracy': null,
-                    'set': null
-                }],
+                lossValues: [],
+                accuracyValues: [],
                 lossCreated: false,
                 accuracyCreated: false,
                 batchNumber: null
@@ -109,7 +107,6 @@
             }
         },
 
-        components: { Plot },
 
         methods: {
             async train() {
@@ -145,12 +142,13 @@
 
                     // Plot loss / accuracy.
                     this.lossValues.push({'batch': i, 'loss': loss, 'set': 'train'});
-                    console.log(this.lossValues)
+                    this.plotLoss()
                     this.lossCreated = true;
 //                    ui.plotLosses(lossValues);
 
                     if (testBatch != null) {
                         this.accuracyValues.push({'batch': i, 'accuracy': accuracy, 'set': 'train'});
+                        this.plotAccuracy()
                         this.accuracyCreated = true;
 //                        ui.plotAccuracies(accuracyValues);
                     }
@@ -165,7 +163,7 @@
                     await tf.nextFrame();
                 }
                 // this.valuesCreated = true;
-                this.message = 'Done'
+                this.message = 'Done!'
             },
 
             async load() {
@@ -192,6 +190,64 @@
                 await this.load()
                 await this.train()
                 this.showPredictions()
+            },
+
+            plotAccuracy() {
+                embed(
+                    `#accuracyCanvas`, {
+                        '$schema': 'https://vega.github.io/schema/vega-lite/v2.json',
+                        'data': {'values': this.accuracyValues},
+                        'mark': {'type': 'line', 'legend': null},
+                        'width': 260,
+                        'orient': 'vertical',
+                        'encoding': {
+                            'x': {'field': 'batch', 'type': 'quantitative'},
+                            'y': {'field': 'accuracy', 'type': 'quantitative'},
+                            'color': {'field': 'set', 'type': 'nominal', 'legend': null},
+                        }
+                    },
+                    {width: 360});
+
+            },
+
+            plotLoss() {
+
+                embed(
+                    '#lossCanvas', {
+                        '$schema': 'https://vega.github.io/schema/vega-lite/v2.json',
+                        'data': {'values': this.lossValues},
+                        'mark': {'type': 'line'},
+                        'width': 260,
+                        'orient': 'vertical',
+                        'encoding': {
+                            'x': {'field': 'batch', 'type': 'quantitative'},
+                            'y': {'field': 'loss', 'type': 'quantitative'},
+                            'color': {'field': 'set', 'type': 'nominal', 'legend': null},
+                        }
+                    },
+                    {width: 360});
+            },
+
+            async showPredictiones() {
+
+                const testExamples = 100
+                const batch = mnistData.nextTestBatch(testExamples);
+
+                tf.tidy(() => {
+                    const output = model.predict(batch.xs.reshape([-1, 28, 28, 1]))
+                    const axis = 1
+                    const labels = Array.from(batch.labels.argMax(axis).dataSync())
+                    const predictions= Array.from(output.argMax(axis).dataSync())
+
+                    this.showTestResults(batch, predictions, labels)
+
+                });
+
+
+            },
+
+            showTestResults(batch, predictions, labels){
+
             }
 
         }
@@ -201,6 +257,10 @@
 </script>
 
 
-<style>
+<style scoped>
+    .canvases {
+        display: inline-block;
+        width: 460px;
+    }
 
 </style>
